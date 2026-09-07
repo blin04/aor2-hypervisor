@@ -3,7 +3,18 @@
 
 #include <stdint.h>
 
-#define FIO_MAX_PATH 256
+#define FOP_MAX_PATH 256
+#define FOP_MAX_FILES 16
+
+/*
+ * wire-protocol flag bits (must match guest/inc/fileio.h). Kept distinct from
+ * <fcntl.h>'s O_RDWR/O_CREAT etc. since the numeric values don't match -
+ * FOP_O_RDWR is 4 here but O_RDWR is 2 in libc, for example.
+ */
+#define FOP_O_RD     1u
+#define FOP_O_WR     2u
+#define FOP_O_RDWR   4u
+#define FOP_O_CREATE 8u
 
 enum {
 	FN_OPEN  = 1,
@@ -35,7 +46,7 @@ struct file_operation  {
     int32_t  result;    /* fd / status / n / new_offset, once computed */
 
     /* OPEN-specific */
-    char     path[FIO_MAX_PATH];
+    char     path[FOP_MAX_PATH];
     uint32_t path_len;
     uint8_t  flags;
 
@@ -49,7 +60,15 @@ struct file_operation  {
 
 };
 
-void file_operation_handle_out(struct file_operation* file_op, uint32_t data);
-uint32_t file_operation_handle_in(struct file_operation* file_op);
+/* per-VM open-file table entry; guest-visible fd is the index into struct vm::files */
+struct file_struct {
+	int host_fd;
+	int in_use;
+};
+
+struct vm; /* defined in vm.h, which includes this header for struct fileio_file */
+
+void file_operation_handle_out(struct vm *v, struct file_operation* file_op, uint32_t data);
+uint32_t file_operation_handle_in(struct vm *v, struct file_operation* file_op);
 
 #endif

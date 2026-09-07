@@ -65,24 +65,20 @@ void* handler(void *arg)
 					flush_console(v);
 			}
 			else if (v->run->io.direction == KVM_EXIT_IO_OUT && v->run->io.port == FILE_PORT) {
-				char* p;
-				switch (file_op.code) {
-					case -1:
-						p = (char *)v->run;
-						file_op.code = *(unsigned char *)(p + v->run->io.data_offset);
-						break;
-					default:
-						p = (char *)v->run;
-						uint32_t data = *(uint32_t*)(p + v->run->io.data_offset);
-						file_operation_handle_out(&file_op, data);
-						break;
+				char* p = (char *)v->run;
+				uint32_t data = (v->run->io.size == 4)
+					? *(uint32_t *)(p + v->run->io.data_offset)
+					: *(unsigned char *)(p + v->run->io.data_offset);
+				if (file_op.state == FOP_WAIT_FN) {
+					file_op.code = data;
 				}
+				file_operation_handle_out(v, &file_op, data);
 			}
 			else if (v->run->io.direction == KVM_EXIT_IO_IN && v->run->io.port == FILE_PORT) {
 				char *p = (char *)v->run;
 				uint32_t* loc = (uint32_t*)(p + v->run->io.data_offset);
-				uint32_t data = file_operation_handle_in(&file_op);
-				*loc = data;	
+				uint32_t data = file_operation_handle_in(v, &file_op);
+				*loc = data;
 			}
 			continue;
 		case KVM_EXIT_IRQ_WINDOW_OPEN:

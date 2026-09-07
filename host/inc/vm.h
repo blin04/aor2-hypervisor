@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <linux/kvm.h>
 
+#include "fileops.h"
+
 #define MEM_SIZE         (2u * 1024u * 1024u)
 #define GUEST_START_ADDR 0x8000
 #define GUEST_CODE_PAGES 16
@@ -42,6 +44,8 @@ struct vm {
 	int irqs_count;
 	char out_buf[256];
 	size_t out_len;
+
+	struct file_struct files[FOP_MAX_FILES];
 };
 
 int setup_vm(struct vm *v, const char* image_path, int memory_size, int page_size);

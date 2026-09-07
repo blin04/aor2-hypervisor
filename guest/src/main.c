@@ -11,33 +11,72 @@ static void print(const char *s)
 		outb(0xE9, *s);
 }
 
+static void print_int(int value)
+{
+	char buf[12];               /* -2147483648 has 10 digits; sign printed separately */
+	int i = 0;
+	unsigned int mag;
+
+	if (value < 0) {
+		outb(0xE9, '-');
+		mag = -(unsigned int)value; /* two's-complement magnitude, safe for INT_MIN */
+	} else {
+		mag = (unsigned int)value;
+	}
+
+	do {                        /* extract digits least-significant first */
+		buf[i++] = (char)('0' + mag % 10);
+		mag /= 10;
+	} while (mag);
+
+	while (i-- > 0)             /* emit most-significant first */
+		outb(0xE9, buf[i]);
+}
+
 void fileio_test()
 {
 	int fd, status;
 
 	/* create + open for writing */
-	fd = open("test.txt", O_CREATE | O_WR);
+	fd = open("text.txt", O_CREATE | O_WR);
 	print(fd >= 0 ? "open create: PASS\n" : "open create: FAIL\n");
-
+ 
 	status = close(fd);
 	print(status == 0 ? "close: PASS\n" : "close: FAIL\n");
-
+ 
 	/* re-open the same file for reading, without O_CREATE */
 	fd = open("test.txt", O_RD);
 	print(fd >= 0 ? "reopen: PASS\n" : "reopen: FAIL\n");
-
+ 
 	status = close(fd);
 	print(status == 0 ? "close after reopen: PASS\n" : "close after reopen: FAIL\n");
-
+ 
+	/* open another file */
+	fd = open("aaa.txt", O_CREATE | O_WR);
+	print(fd >= 0 ? "reopen: PASS\n" : "reopen: FAIL\n");
+ 
+	status = close(fd);
+	print(status == 0 ? "close after reopen: PASS\n" : "close after reopen: FAIL\n");
+ 
 	/* invalid filename must be rejected on creation */
 	fd = open("1bad.txt", O_CREATE | O_WR);
 	print(fd < 0 ? "invalid name rejected: PASS\n" : "invalid name rejected: FAIL\n");
+	
+	print("received: ");
+	print_int(fd);
+	print("\n");
 
 	/* closing an fd that was never opened must fail */
-	status = close(999);
+	status = close(69);
 	print(status < 0 ? "close bad fd: PASS\n" : "close bad fd: FAIL\n");
 
-	print("fileio test completed, verdict: PASS\n");
+	print("received: ");
+	print_int(status);
+	print("\n");
+ 
+	close(6969);
+
+	// print("fileio test completed, verdict: PASS\n");
 }
 
 void
