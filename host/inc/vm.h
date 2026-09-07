@@ -24,6 +24,7 @@
 #define EFER_LMA (1u << 10)
 
 struct vm {
+	const char *image_path;
 	int kvm_fd;
 	int vm_fd;
 	int vcpu_fd;
@@ -36,6 +37,8 @@ struct vm {
 	int stop;
 	int ret;
 	int irqs_count;
+	char out_buf[256];
+	size_t out_len;
 };
 
 int setup_vm(struct vm *v, const char* image_path);

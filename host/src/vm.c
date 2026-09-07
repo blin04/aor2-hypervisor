@@ -16,6 +16,8 @@ int setup_vm(struct vm *v, const char* image_path)
 		return 1;
 	}
 
+	v->image_path = image_path;
+
 	if (ioctl(v->vcpu_fd, KVM_GET_SREGS, &v->sregs) < 0) {
 		perror("KVM_GET_SREGS");
 		vm_destroy(v);
