@@ -8,6 +8,51 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 
+// setups a vm for a particular guest
+int setup_vm(struct vm *v, const char* image_path) 
+{
+	if (vm_init(v, MEM_SIZE)) {
+		printf("Failed to init the VM\n");
+		return 1;
+	}
+
+	if (ioctl(v->vcpu_fd, KVM_GET_SREGS, &v->sregs) < 0) {
+		perror("KVM_GET_SREGS");
+		vm_destroy(v);
+		return 1;
+	}
+
+	setup_long_mode(v, &v->sregs);
+
+	if (ioctl(v->vcpu_fd, KVM_SET_SREGS, &v->sregs) < 0) {
+		perror("KVM_SET_SREGS");
+		vm_destroy(v);
+		return 1;
+	}
+
+	if (load_guest_image(v, image_path, GUEST_START_ADDR) < 0) {
+		printf("Failed to load guest image\n");
+		vm_destroy(v);
+		return 1;
+	}
+
+	memset(&v->regs, 0, sizeof(v->regs));
+	v->regs.rflags = 0x2;
+	v->regs.rip    = 0;
+	v->regs.rsp    = 2 << 20;
+
+	if (ioctl(v->vcpu_fd, KVM_SET_REGS, &v->regs) < 0) {
+		perror("KVM_SET_REGS");
+		vm_destroy(v);
+		return 1;
+	}
+
+	v->run->request_interrupt_window = 1;
+	v->irqs_count = 3;
+
+	return 1;
+}
+
 int vm_init(struct vm *v, size_t mem_size)
 {
 	struct kvm_userspace_memory_region region;

@@ -31,8 +31,14 @@ struct vm {
 	size_t mem_size;
 	struct kvm_run *run;
 	int run_mmap_size;
+	struct kvm_sregs sregs;
+	struct kvm_regs regs;
+	int stop;
+	int ret;
+	int irqs_count;
 };
 
+int setup_vm(struct vm *v, const char* image_path);
 int  vm_init(struct vm *v, size_t mem_size);
 void vm_destroy(struct vm *v);
 void setup_long_mode(struct vm *v, struct kvm_sregs *sregs);
