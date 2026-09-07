@@ -72,7 +72,7 @@ void* handler(void *arg)
 				if (file_op.state == FOP_WAIT_FN) {
 					file_op.code = data;
 				}
-				file_operation_handle_out(v, &file_op, data);
+				file_operation_handle_out(&file_op, data);
 			}
 			else if (v->run->io.direction == KVM_EXIT_IO_IN && v->run->io.port == FILE_PORT) {
 				char *p = (char *)v->run;

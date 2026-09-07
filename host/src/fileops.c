@@ -54,25 +54,19 @@ static int host_close(struct vm *v, int fd) {
         return -1;
     int host_fd = v->files[fd].host_fd;
     int ret = close(host_fd);
-    
-
     return ret;
 }
 
 static int host_read(struct vm *v, int fd, char *buf, uint32_t count) {
-    (void)v;
-    (void)fd;
-    (void)buf;
-    (void)count;
-    return -1;
+    int host_fd = v->files[fd].host_fd;
+    int ret = read(host_fd, buf, count);
+    return ret;
 }
 
 static int host_write(struct vm *v, int fd, const char *buf, uint32_t count) {
-    (void)v;
-    (void)fd;
-    (void)buf;
-    (void)count;
-    return -1;
+    int host_fd = v->files[fd].host_fd;
+    int ret = write(host_fd, buf, count);
+    return ret;
 }
 
 static int host_lseek(struct vm *v, int fd, int offset, uint8_t off_flag) {
@@ -83,7 +77,7 @@ static int host_lseek(struct vm *v, int fd, int offset, uint8_t off_flag) {
     return -1;
 }
 
-static void handle_open(struct file_operation* file_op, uint32_t data) {
+static void handle_open(struct file_operation* file_op, uint32_t data, struct vm* v) {
     switch (file_op->state) {
         case FOP_WAIT_FN:
             file_op->state = FOP_OPEN_WAIT_PATHLEN;
@@ -103,12 +97,14 @@ static void handle_open(struct file_operation* file_op, uint32_t data) {
             file_op->flags = data;
             file_op->state = FOP_OPEN_SEND_FD;
             break;
+        case FOP_OPEN_SEND_FD:
+            file_op->result = host_open(v, file_op->path, file_op->flags); 
         default:
             break;
     }
 }
 
-static void handle_close(struct file_operation* file_op, uint32_t data) {
+static void handle_close(struct file_operation* file_op, uint32_t data, struct vm* v) {
     switch (file_op->state) {
         case FOP_WAIT_FN:
             file_op->state = FOP_CLOSE_WAIT_FD;
@@ -117,18 +113,25 @@ static void handle_close(struct file_operation* file_op, uint32_t data) {
             file_op->fd = data;
             file_op->state = FOP_CLOSE_SEND_STATUS;
             break;
+        case FOP_CLOSE_SEND_STATUS:
+            file_op->result = host_close(v, file_op->fd);
         default:
             break;
     }
 }
 
-static void handle_read(struct file_operation* file_op, uint32_t data) {
+static void handle_read(struct file_operation* file_op, uint32_t data, struct vm* v) {
     switch (file_op->state) {
         case FOP_WAIT_FN:
+            file_op->state = FOP_READ_WAIT_FD;
             break;
         case FOP_READ_WAIT_FD:
+            file_op->fd = data;
+            file_op->state = FOP_READ_WAIT_COUNT;
             break;
         case FOP_READ_WAIT_COUNT:
+            file_op->count = data;
+            file_op->state = FOP_READ_SEND_N;
             break;
         case FOP_READ_SEND_N:
             break;
@@ -139,7 +142,7 @@ static void handle_read(struct file_operation* file_op, uint32_t data) {
     }
 }
 
-static void handle_write(struct file_operation* file_op, uint32_t data) {
+static void handle_write(struct file_operation* file_op, uint32_t data, struct vm* v) {
     switch (file_op->state) {
         case FOP_WAIT_FN:
             break;
@@ -156,7 +159,7 @@ static void handle_write(struct file_operation* file_op, uint32_t data) {
     }
 }
 
-static void handle_lseek(struct file_operation* file_op, uint32_t data) {
+static void handle_lseek(struct file_operation* file_op, uint32_t data, struct vm* v) {
     switch (file_op->state) {
         case FOP_WAIT_FN:
             break;
@@ -173,27 +176,27 @@ static void handle_lseek(struct file_operation* file_op, uint32_t data) {
     }
 }
 
-void file_operation_handle_out(struct vm *v, struct file_operation* file_op, uint32_t data) {
+void file_operation_handle_out(struct file_operation* file_op, uint32_t data) {
     if (file_op->state == FOP_WAIT_FN) {
         // no op started yet
         // the data handled is operation code
         file_op->code = data;
     }
     switch (file_op->code) {
-        case FN_OPEN:
-            handle_open(file_op, data);
+        case FOP_OPEN:
+            handle_open(file_op, data, NULL);
             break;
-        case FN_CLOSE:
-            handle_close(file_op, data);
+        case FOP_CLOSE:
+            handle_close(file_op, data, NULL);
             break;
-        case FN_READ:
-            handle_read(file_op, data);
+        case FOP_READ:
+            handle_read(file_op, data, NULL);
             break;
-        case FN_WRITE:
-            handle_write(file_op, data);
+        case FOP_WRITE:
+            handle_write(file_op, data, NULL);
             break;
-        case FN_LSEEK:
-            handle_lseek(file_op, data);
+        case FOP_LSEEK:
+            handle_lseek(file_op, data, NULL);
             break;
         default:
 
@@ -201,12 +204,12 @@ void file_operation_handle_out(struct vm *v, struct file_operation* file_op, uin
 }
 
 uint32_t file_operation_handle_in(struct vm *v, struct file_operation* file_op) {
-    switch (file_op->state) {
-        case FOP_OPEN_SEND_FD:
-            file_op->result = host_open(v, file_op->path, file_op->flags);
+    switch (file_op->code) {
+        case FOP_OPEN:
+            handle_open(file_op, 0, v);
             break;
-        case FOP_CLOSE_SEND_STATUS:
-            file_op->result = host_close(v, file_op->fd);
+        case FOP_CLOSE:
+            handle_close(file_op, 0, v);
             break;
         default:
             return 0;

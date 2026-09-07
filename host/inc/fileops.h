@@ -17,11 +17,11 @@
 #define FOP_O_CREATE 8u
 
 enum {
-	FN_OPEN  = 1,
-	FN_CLOSE = 2,
-	FN_READ  = 3,
-	FN_WRITE = 4,
-	FN_LSEEK = 5,
+	FOP_OPEN  = 1,
+	FOP_CLOSE = 2,
+	FOP_READ  = 3,
+	FOP_WRITE = 4,
+	FOP_LSEEK = 5,
 };
 
 enum file_operation_state {
@@ -68,7 +68,7 @@ struct file_struct {
 
 struct vm; /* defined in vm.h, which includes this header for struct fileio_file */
 
-void file_operation_handle_out(struct vm *v, struct file_operation* file_op, uint32_t data);
+void file_operation_handle_out(struct file_operation* file_op, uint32_t data);
 uint32_t file_operation_handle_in(struct vm *v, struct file_operation* file_op);
 
 #endif

@@ -4,7 +4,7 @@
 #define FILE_PORT 0x278
 
 enum {
-	FN_OPEN  = 1,
+	FOP_OPEN  = 1,
 	FN_CLOSE = 2,
 	FN_READ  = 3,
 	FN_WRITE = 4,
@@ -17,7 +17,7 @@ int open(const char *path, int flags)
 	while (path[len])
 		++len;
 
-	outb(FILE_PORT, FN_OPEN);
+	outb(FILE_PORT, FOP_OPEN);
 	out_u32(FILE_PORT, len);
 	out_bytes(FILE_PORT, path, len);
 	outb(FILE_PORT, (uint8_t)flags);
