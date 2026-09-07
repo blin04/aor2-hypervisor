@@ -23,6 +23,9 @@
 #define EFER_LME (1u << 8)
 #define EFER_LMA (1u << 10)
 
+#define FILE_PORT	0x0278
+#define IO_PORT		0xE9
+
 struct vm {
 	const char *image_path;
 	int kvm_fd;
