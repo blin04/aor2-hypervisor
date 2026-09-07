@@ -6,15 +6,15 @@
 #define FOP_MAX_PATH 256
 #define FOP_MAX_FILES 16
 
-/*
- * wire-protocol flag bits (must match guest/inc/fileio.h). Kept distinct from
- * <fcntl.h>'s O_RDWR/O_CREAT etc. since the numeric values don't match -
- * FOP_O_RDWR is 4 here but O_RDWR is 2 in libc, for example.
- */
 #define FOP_O_RD     1u
 #define FOP_O_WR     2u
 #define FOP_O_RDWR   4u
 #define FOP_O_CREATE 8u
+
+/* wire-protocol lseek flags (must match guest/inc/fileio.h); differ from libc's
+ * SEEK_SET (0) / SEEK_END (2), so translate before calling the real lseek(). */
+#define FOP_SEEK_SET 1u
+#define FOP_SEEK_END 2u
 
 enum {
 	FOP_OPEN  = 1,
@@ -25,7 +25,7 @@ enum {
 };
 
 enum file_operation_state {
-	FOP_WAIT_FN = 0,
+	FOP_WAIT_OP = 0,
 
 	FOP_OPEN_WAIT_PATHLEN, FOP_OPEN_WAIT_PATH, FOP_OPEN_WAIT_FLAGS, FOP_OPEN_SEND_FD,
 
@@ -42,19 +42,19 @@ struct file_operation  {
     int code;
     enum file_operation_state state;
     int      fd;
-    uint32_t have;      /* progress counter for whichever byte-loop is active */
-    int32_t  result;    /* fd / status / n / new_offset, once computed */
+    uint32_t have;      // counter for loops
+    int32_t  result;    
 
-    /* OPEN-specific */
+    // open related
     char     path[FOP_MAX_PATH];
     uint32_t path_len;
     uint8_t  flags;
 
-    /* READ/WRITE-specific */
+    // read / write related 
     uint32_t count;
     char    *payload;
 
-    /* LSEEK-specific */
+    // lseek related
     int      offset;
     uint8_t  off_flag;
 
@@ -68,7 +68,6 @@ struct file_struct {
 
 struct vm; /* defined in vm.h, which includes this header for struct fileio_file */
 
-void file_operation_handle_out(struct file_operation* file_op, uint32_t data);
-uint32_t file_operation_handle_in(struct vm *v, struct file_operation* file_op);
+uint32_t file_operation_handler(struct vm *v, struct file_operation* file_op, uint32_t data);
 
 #endif

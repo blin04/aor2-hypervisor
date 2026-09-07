@@ -69,16 +69,12 @@ void* handler(void *arg)
 				uint32_t data = (v->run->io.size == 4)
 					? *(uint32_t *)(p + v->run->io.data_offset)
 					: *(unsigned char *)(p + v->run->io.data_offset);
-				if (file_op.state == FOP_WAIT_FN) {
-					file_op.code = data;
-				}
-				file_operation_handle_out(&file_op, data);
+				file_operation_handler(v, &file_op, data);
 			}
 			else if (v->run->io.direction == KVM_EXIT_IO_IN && v->run->io.port == FILE_PORT) {
 				char *p = (char *)v->run;
 				uint32_t* loc = (uint32_t*)(p + v->run->io.data_offset);
-				uint32_t data = file_operation_handle_in(v, &file_op);
-				*loc = data;
+				*loc = file_operation_handler(v, &file_op, 0);
 			}
 			continue;
 		case KVM_EXIT_IRQ_WINDOW_OPEN:

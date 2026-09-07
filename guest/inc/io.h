@@ -3,6 +3,13 @@
 
 #include <stdint.h>
 
+#define FILE_PORT   0x278
+#define OUT_PORT    0xE9
+
+void print(const char* s);
+
+void print_int(int x);
+
 static inline void outb(uint16_t port, uint8_t value)
 {
 	asm("outb %0,%1" : /* empty */ : "a" (value), "Nd" (port) : "memory");

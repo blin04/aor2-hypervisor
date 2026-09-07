@@ -15,4 +15,6 @@ int read(int fd, char *buf, int count);
 int write(int fd, const char *buf, int count);
 int lseek(int fd, const int offset, int off_flag);
 
+int strlen(const char *s);
+
 #endif /* FILEIO_H */

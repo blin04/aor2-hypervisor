@@ -1,7 +1,6 @@
 #include "fileio.h"
 #include "io.h"
-
-#define FILE_PORT 0x278
+#include "utils.h"
 
 enum {
 	FOP_OPEN  = 1,
@@ -13,9 +12,8 @@ enum {
 
 int open(const char *path, int flags)
 {
-	uint32_t len = 0;
-	while (path[len])
-		++len;
+
+	int len = strlen(path);
 
 	outb(FILE_PORT, FOP_OPEN);
 	out_u32(FILE_PORT, len);
@@ -50,6 +48,7 @@ int read(int fd, char *buf, int count)
 
 int write(int fd, const char *buf, int count)
 {
+	outb(OUT_PORT, 69);
 	outb(FILE_PORT, FN_WRITE);
 	out_u32(FILE_PORT, (uint32_t)fd);
 	out_u32(FILE_PORT, (uint32_t)count);
