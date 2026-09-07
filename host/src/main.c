@@ -129,18 +129,18 @@ int main(int argc, char *argv[])
 	while ((ret = getopt_long(argc, argv, "m:p:g:", options, NULL)) != -1) {
 		switch (ret) {
 		case 'm':
-			printf("parsed m with arg %s\n", optarg);
+			// printf("parsed m with arg %s\n", optarg);
 			guest_memory_size = atoi(optarg) * 1024u * 1024u;		// MB
 			break;
 		case 'p':
-			printf("parsed p with arg %s\n", optarg);
+			// printf("parsed p with arg %s\n", optarg);
 			if (*optarg == '2')
 				guest_page_size = 2 * 1024u * 1024u;	// 2MB
 			else
 				guest_page_size = 4 * 1024u;			// 4kB
 			break;
 		case 'g':
-			printf("parsed g with args: ");
+			// printf("parsed g with args: ");
 		
 			// first guest image is parsed by getopt
 			guest_paths[0] = optarg;
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 	pthread_t guest_handlers[n_guests];
 
 	for (int i = 0; i < n_guests; i++) {
-		setup_vm(&guests[i], guest_paths[i]);
+		setup_vm(&guests[i], guest_paths[i], guest_memory_size, guest_page_size);
 		int ret = pthread_create(
 			&guest_handlers[i], NULL, handler, (void*)&guests[i]
 		);

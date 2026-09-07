@@ -9,9 +9,9 @@
 #include <sys/mman.h>
 
 // setups a vm for a particular guest
-int setup_vm(struct vm *v, const char* image_path) 
+int setup_vm(struct vm *v, const char* image_path, int memory_size, int page_size) 
 {
-	if (vm_init(v, MEM_SIZE)) {
+	if (vm_init(v, memory_size)) {
 		printf("Failed to init the VM\n");
 		return 1;
 	}
@@ -24,7 +24,7 @@ int setup_vm(struct vm *v, const char* image_path)
 		return 1;
 	}
 
-	setup_long_mode(v, &v->sregs);
+	setup_long_mode(v, &v->sregs, page_size);
 
 	if (ioctl(v->vcpu_fd, KVM_SET_SREGS, &v->sregs) < 0) {
 		perror("KVM_SET_SREGS");
@@ -32,7 +32,9 @@ int setup_vm(struct vm *v, const char* image_path)
 		return 1;
 	}
 
-	if (load_guest_image(v, image_path, GUEST_START_ADDR) < 0) {
+	uint64_t load_addr = (page_size == 2 * 1024u * 1024u) ? 0 : GUEST_START_ADDR;
+
+	if (load_guest_image(v, image_path, load_addr) < 0) {
 		printf("Failed to load guest image\n");
 		vm_destroy(v);
 		return 1;
@@ -172,28 +174,35 @@ static void setup_segments_64(struct kvm_sregs *sregs)
 	sregs->ds = sregs->es = sregs->fs = sregs->gs = sregs->ss = data;
 }
 
-void setup_long_mode(struct vm *v, struct kvm_sregs *sregs)
+void setup_long_mode(struct vm *v, struct kvm_sregs *sregs, size_t page_size)
 {
-	uint64_t pml4_addr = 0x1000;
+	uint64_t start_addr = (page_size == 2 * 1024u * 1024u) ? 0x100000 : 0x1000;
+	uint64_t pml4_addr = start_addr;
 	uint64_t *pml4 = (void *)(v->mem + pml4_addr);
 
-	uint64_t pdpt_addr = 0x2000;
+	uint64_t pdpt_addr = pml4_addr + 0x1000;
 	uint64_t *pdpt = (void *)(v->mem + pdpt_addr);
 
-	uint64_t pd_addr = 0x3000;
+	uint64_t pd_addr = pdpt_addr + 0x1000;
 	uint64_t *pd = (void *)(v->mem + pd_addr);
 
-	uint64_t pt_addr = 0x4000;
+	uint64_t pt_addr = pd_addr + 0x1000;
 	uint64_t *pt = (void *)(v->mem + pt_addr);
 
 	pml4[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | pdpt_addr;
 	pdpt[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | pd_addr;
-	pd[0]   = PDE64_PRESENT | PDE64_RW | PDE64_USER | pt_addr;
 
-	for (int i = 0; i < GUEST_CODE_PAGES; i++)
-		pt[i] = (GUEST_START_ADDR + i * 0x1000) | PDE64_PRESENT | PDE64_RW | PDE64_USER;
+	if (page_size == 2 * 1024u * 1024u) {
+		pd[0]   = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS;
+	}
+	else {
+		pd[0]   = PDE64_PRESENT | PDE64_RW | PDE64_USER | pt_addr;
 
-	pt[511] = 0x6000 | PDE64_PRESENT | PDE64_RW | PDE64_USER;
+		for (int i = 0; i < GUEST_CODE_PAGES; i++)
+			pt[i] = (GUEST_START_ADDR + i * 0x1000) | PDE64_PRESENT | PDE64_RW | PDE64_USER;
+
+		pt[511] = 0x6000 | PDE64_PRESENT | PDE64_RW | PDE64_USER;
+	}
 
 	sregs->cr3  = pml4_addr;
 	sregs->cr4  = CR4_PAE;
