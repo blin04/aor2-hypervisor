@@ -51,19 +51,19 @@ _start(void)
 
 	init_idt();
 
-	asm volatile("sti");
-
 	print("Hello, world!\n");
 
 	// fileio_test();
 
-	// write_test();
+	write_test();
 
 	// read_test();
 
 	// lseek_test();
 
-	// copy_on_write_test();
+	copy_on_write_test();
+
+	asm volatile("sti");
 
 	for (;;)
 		asm volatile("hlt");

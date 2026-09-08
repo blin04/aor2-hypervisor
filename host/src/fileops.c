@@ -17,6 +17,9 @@ static int n_shared_paths;
 
 static void copy_file(const char *src, const char *dst);
 
+static void resolve_host_path(struct vm *v, const char *guest_path, int shared,
+                              char *resolved_path, size_t resolved_path_sz);
+
 static int host_open(struct vm *v, const char *path, uint8_t flags) {
     if (!(('A' <= path[0] && path[0] <= 'Z')
         || ('a' <= path[0] && path[0] <= 'z')))
@@ -39,7 +42,13 @@ static int host_open(struct vm *v, const char *path, uint8_t flags) {
         real_flags |= O_CREAT;
         
 
-    int fd = open(path, real_flags, 0644);
+    int shared = is_file_shared(path);
+
+    // shade private files into the VM's namespace; shared files stay unshaded
+    char host_path[FOP_MAX_PATH + 16];
+    resolve_host_path(v, path, shared, host_path, sizeof(host_path));
+
+    int fd = open(host_path, real_flags, 0644);
     int free_fd;
     if (fd != -1) {
         for (free_fd = 0; free_fd < FOP_MAX_FILES; free_fd++)
@@ -53,15 +62,16 @@ static int host_open(struct vm *v, const char *path, uint8_t flags) {
         else {
             v->files[free_fd].host_fd = fd;
             v->files[free_fd].in_use = 1;
-            v->files[free_fd].is_shared = is_file_shared(path);
+            v->files[free_fd].is_shared = shared;
             v->files[free_fd].copied = 0;
             v->files[free_fd].flags = flags;
+            // store guest path, the on the host is always derived from it
             strncpy(v->files[free_fd].name, path, FOP_MAX_PATH - 1);
         }
     }
     else free_fd = fd;
 
-    printf("[dbg] host_open path=%s flags=%u -> guest_fd=%d host_fd=%d\n", path, flags, free_fd, fd);
+    printf("[dbg] host_open path=%s host_path=%s flags=%u -> guest_fd=%d host_fd=%d\n", path, host_path, flags, free_fd, fd);
     return free_fd;
 }
 
@@ -92,7 +102,7 @@ static int host_write(struct vm *v, int fd, const char *buf, uint32_t count) {
         off_t pos = lseek(v->files[fd].host_fd, 0, SEEK_CUR);
         close(v->files[fd].host_fd);
 
-        char copy_path[FOP_MAX_PATH + 10];
+        char copy_path[FOP_MAX_PATH + 16];
         snprintf(copy_path, sizeof(copy_path), "vm-%d-%s", v->id, v->files[fd].name);
 
         copy_file(v->files[fd].name, copy_path);
@@ -311,4 +321,19 @@ static void copy_file(const char *src , const char *dst) {
 
     close(s_fd);
     close(d_fd);
+}
+
+// map guest's filename to the actual file in the filesystem
+//
+// local guest files are shaded with `vm-<id>-` prefix in 
+// order to provide isolation among guests
+//
+// shared files are unshaded
+// when cow is peformed the local copy gets shaded accordingly
+static void resolve_host_path(struct vm *v, const char *guest_path, int shared,
+                              char *resolved_path, size_t resolved_path_sz) {
+    if (shared)
+        snprintf(resolved_path, resolved_path_sz, "%s", guest_path);
+    else
+        snprintf(resolved_path, resolved_path_sz, "vm-%d-%s", v->id, guest_path);
 }
