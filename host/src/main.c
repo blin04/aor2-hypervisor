@@ -1,5 +1,6 @@
 #include "vm.h"
 #include "handler.h"
+#include "fileops.h"
 
 #include <getopt.h>
 #include <pthread.h>
@@ -101,8 +102,10 @@ int main(int argc, char *argv[])
 	struct vm guests[n_guests];
 	pthread_t guest_handlers[n_guests];
 
+	init_shared_files(shared_files, n_shared_files);
+
 	for (int i = 0; i < n_guests; i++) {
-		setup_vm(&guests[i], guest_paths[i], guest_memory_size, guest_page_size);
+		setup_vm(&guests[i], i, guest_paths[i], guest_memory_size, guest_page_size);
 		int ret = pthread_create(
 			&guest_handlers[i], NULL, handler, (void*)&guests[i]
 		);

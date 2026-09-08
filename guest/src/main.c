@@ -131,6 +131,55 @@ void lseek_test()
 	close(fd);
 }
 
+void copy_on_write_test()
+{
+	print("\n------ copy-on-write test ------\n");
+	int fd, ret;
+	char buf[128];
+
+	fd = open("shared.txt", O_RDWR);
+	if (fd < 0) {
+		print("cow test failed: can't open shared file\n");
+		return;
+	}
+
+	int orig_len = read(fd, buf, sizeof(buf) - 1);
+	if (orig_len < 0) {
+		print("cow test failed: can't read\n");
+		close(fd);
+		return;
+	}
+	buf[orig_len] = '\0';
+	print("original contents: ");
+	print(buf);
+	print("\n");
+
+	char* str = "\novo je nova linija\n";
+	int len = strlen(str);
+	ret = write(fd, str, len);
+	if (ret != len) {
+		print("cow test failed: can't write\n");
+		close(fd);
+		return;
+	}
+
+	lseek(fd, orig_len, SEEK_SET);
+	char verify[32];
+	int vn = read(fd, verify, len);
+	verify[vn > 0 ? vn : 0] = '\0';
+	print("read back: ");
+	print(verify);
+	print("\n");
+
+	int ok = (vn == len);
+	for (int i = 0; ok && i < vn; i++)
+		if (verify[i] != str[i])
+			ok = 0;
+	print(ok ? "cow verify: PASS\n" : "cow verify: FAIL\n");
+
+	close(fd);
+}
+
 void
 __attribute__((noreturn))
 __attribute__((section(".start")))
@@ -179,13 +228,15 @@ _start(void)
 
 	print("Hello, world!\n");
 
-	fileio_test();
+	// fileio_test();
 
-	write_test();
+	// write_test();
 
-	read_test();
+	// read_test();
 
-	lseek_test();
+	// lseek_test();
+
+	copy_on_write_test();
 
 	for (;;)
 		asm volatile("hlt");

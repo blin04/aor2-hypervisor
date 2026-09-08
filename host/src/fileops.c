@@ -6,7 +6,16 @@
 #include <linux/kvm.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
+
+#include <errno.h>
+
+static char **shared_paths;
+
+static int n_shared_paths;
+
+static void copy_file(const char *src, const char *dst);
 
 static int host_open(struct vm *v, const char *path, uint8_t flags) {
     if (!(('A' <= path[0] && path[0] <= 'Z')
@@ -16,7 +25,6 @@ static int host_open(struct vm *v, const char *path, uint8_t flags) {
     for (int i = 0; path[i] != '\0'; i++) 
         if (!isalnum(path[i]) && !(path[i] == '.'))
             return -1;
-        
 
     // translate flags into POSIX
     // compatible values
@@ -29,7 +37,7 @@ static int host_open(struct vm *v, const char *path, uint8_t flags) {
         real_flags = O_RDONLY;
     if (flags & FOP_O_CREATE)
         real_flags |= O_CREAT;
-
+        
 
     int fd = open(path, real_flags, 0644);
     int free_fd;
@@ -45,6 +53,10 @@ static int host_open(struct vm *v, const char *path, uint8_t flags) {
         else {
             v->files[free_fd].host_fd = fd;
             v->files[free_fd].in_use = 1;
+            v->files[free_fd].is_shared = is_file_shared(path);
+            v->files[free_fd].copied = 0;
+            v->files[free_fd].flags = flags;
+            strncpy(v->files[free_fd].name, path, FOP_MAX_PATH - 1);
         }
     }
     else free_fd = fd;
@@ -74,8 +86,26 @@ static int host_read(struct vm *v, int fd, char *buf, uint32_t count) {
 static int host_write(struct vm *v, int fd, const char *buf, uint32_t count) {
     if (fd < 0 || fd >= FOP_MAX_FILES)
         return -1;
+
+    if (v->files[fd].is_shared && !v->files[fd].copied) {
+        // get current file position;
+        off_t pos = lseek(v->files[fd].host_fd, 0, SEEK_CUR);
+        close(v->files[fd].host_fd);
+
+        char copy_path[FOP_MAX_PATH + 10];
+        snprintf(copy_path, sizeof(copy_path), "vm-%d-%s", v->id, v->files[fd].name);
+
+        copy_file(v->files[fd].name, copy_path);
+
+        int new_fd = open(copy_path, O_RDWR);
+        v->files[fd].host_fd = new_fd;
+        v->files[fd].copied = 1;
+        if (pos >= 0)   // restore file position
+            lseek(new_fd, pos, SEEK_SET);
+    }
     int host_fd = v->files[fd].host_fd;
     int ret = write(host_fd, buf, count);
+    printf("[DEBUG] Trying writing %s, actually written %d, error? %d\n", buf, ret, errno);
     return ret;
 }
 
@@ -257,4 +287,28 @@ uint32_t file_operation_handler(struct vm* v, struct file_operation* file_op, ui
             break;
     }
     return (uint32_t)file_op->result;
+}
+
+void init_shared_files(char **paths, int n) { 
+    shared_paths = paths; 
+    n_shared_paths = n; 
+}
+
+int is_file_shared(const char *path) {
+    for (int i = 0; i < n_shared_paths; i++)
+        if (strcmp(path, shared_paths[i]) == 0)
+            return 1;
+    return 0;
+}
+
+static void copy_file(const char *src , const char *dst) {
+    int s_fd = open(src, O_RDONLY, 0644);
+    int d_fd = open(dst, O_CREAT | O_WRONLY, 0644);
+
+    char c;
+    while (read(s_fd, &c, 1))
+        write(d_fd, &c, 1);
+
+    close(s_fd);
+    close(d_fd);
 }

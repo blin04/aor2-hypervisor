@@ -9,7 +9,7 @@
 #include <sys/mman.h>
 
 // setups a vm for a particular guest
-int setup_vm(struct vm *v, const char* image_path, int memory_size, int page_size) 
+int setup_vm(struct vm *v, int id, const char* image_path, int memory_size, int page_size) 
 {
 	if (vm_init(v, memory_size)) {
 		printf("Failed to init the VM\n");
@@ -17,6 +17,7 @@ int setup_vm(struct vm *v, const char* image_path, int memory_size, int page_siz
 	}
 
 	v->image_path = image_path;
+	v->id = id;
 
 	if (ioctl(v->vcpu_fd, KVM_GET_SREGS, &v->sregs) < 0) {
 		perror("KVM_GET_SREGS");

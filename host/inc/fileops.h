@@ -60,13 +60,20 @@ struct file_operation  {
 
 };
 
-/* per-VM open-file table entry; guest-visible fd is the index into struct vm::files */
 struct file_struct {
 	int host_fd;
 	int in_use;
+    int is_shared;
+    int copied;
+    char name[FOP_MAX_PATH];
+    uint8_t flags;
 };
 
-struct vm; /* defined in vm.h, which includes this header for struct fileio_file */
+struct vm;
+
+void init_shared_files(char **paths, int n_paths);
+
+int  is_file_shared(const char *path);
 
 uint32_t file_operation_handler(struct vm *v, struct file_operation* file_op, uint32_t data);
 

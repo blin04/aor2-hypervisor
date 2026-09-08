@@ -90,7 +90,7 @@ void* handler(void *arg)
 			}
 			continue;
 		case KVM_EXIT_HLT:
-			vm_log(v, "Guest %s finished!\n", v->image_path);
+			vm_log(v, "VM %d (image: %s) finished!\n", v->id, v->image_path);
 			v->stop = 1;
 			break;
 		case KVM_EXIT_SHUTDOWN:

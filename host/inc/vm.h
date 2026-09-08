@@ -29,6 +29,7 @@
 #define IO_PORT		0xE9
 
 struct vm {
+	int id;
 	const char *image_path;
 	int kvm_fd;
 	int vm_fd;
@@ -48,7 +49,7 @@ struct vm {
 	struct file_struct files[FOP_MAX_FILES];
 };
 
-int setup_vm(struct vm *v, const char* image_path, int memory_size, int page_size);
+int setup_vm(struct vm *v, int id, const char* image_path, int memory_size, int page_size);
 int  vm_init(struct vm *v, size_t mem_size);
 void vm_destroy(struct vm *v);
 void setup_long_mode(struct vm *v, struct kvm_sregs *sregs, size_t page_size);
