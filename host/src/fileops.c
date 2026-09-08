@@ -44,7 +44,7 @@ static int host_open(struct vm *v, const char *path, uint8_t flags) {
 
     int shared = is_file_shared(path);
 
-    // shade private files into the VM's namespace; shared files stay unshaded
+    // get actual host path from the guest one
     char host_path[FOP_MAX_PATH + 16];
     resolve_host_path(v, path, shared, host_path, sizeof(host_path));
 
@@ -65,8 +65,8 @@ static int host_open(struct vm *v, const char *path, uint8_t flags) {
             v->files[free_fd].is_shared = shared;
             v->files[free_fd].copied = 0;
             v->files[free_fd].flags = flags;
-            // store guest path, the on the host is always derived from it
-            strncpy(v->files[free_fd].name, path, FOP_MAX_PATH - 1);
+            // store guest path, the one on the host is always derived from it
+            strncpy(v->files[free_fd].guest_path, path, FOP_MAX_PATH - 1);
         }
     }
     else free_fd = fd;
@@ -94,15 +94,18 @@ static int host_write(struct vm *v, int fd, const char *buf, uint32_t count) {
     if (fd < 0 || fd >= FOP_MAX_FILES)
         return -1;
 
+    // make a local copy if a file is shared
     if (v->files[fd].is_shared && !v->files[fd].copied) {
         // get current file position;
         off_t pos = lseek(v->files[fd].host_fd, 0, SEEK_CUR);
         close(v->files[fd].host_fd);
 
         char copy_path[FOP_MAX_PATH + 16];
-        snprintf(copy_path, sizeof(copy_path), "vm-%d-%s", v->id, v->files[fd].name);
+        snprintf(copy_path, sizeof(copy_path), "files/vm-%d-%s", v->id, v->files[fd].guest_path);
 
-        copy_file(v->files[fd].name, copy_path);
+        char source_path[FOP_MAX_PATH + 16];
+        resolve_host_path(v, v->files[fd].guest_path, v->files[fd].is_shared, source_path, sizeof(source_path));
+        copy_file(source_path, copy_path);
 
         int new_fd = open(copy_path, O_RDWR);
         v->files[fd].host_fd = new_fd;
@@ -326,7 +329,7 @@ static void copy_file(const char *src , const char *dst) {
 static void resolve_host_path(struct vm *v, const char *guest_path, int shared,
                               char *resolved_path, size_t resolved_path_sz) {
     if (shared)
-        snprintf(resolved_path, resolved_path_sz, "%s", guest_path);
+        snprintf(resolved_path, resolved_path_sz, "files/%s", guest_path);
     else
-        snprintf(resolved_path, resolved_path_sz, "vm-%d-%s", v->id, guest_path);
+        snprintf(resolved_path, resolved_path_sz, "files/vm-%d-%s", v->id, guest_path);
 }

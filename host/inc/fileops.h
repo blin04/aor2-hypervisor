@@ -65,7 +65,7 @@ struct file_struct {
 	int in_use;
     int is_shared;
     int copied;
-    char name[FOP_MAX_PATH];
+    char guest_path[FOP_MAX_PATH];
     uint8_t flags;
 };
 

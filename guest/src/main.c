@@ -52,10 +52,16 @@ _start(void)
 	init_idt();
 
 	asm volatile("sti");
-
+ 
+	asm volatile("nop");
+ 
 	asm volatile("nop");
 
-	asm volatile("nop");
+	// int fd = open("test.txt", O_CREATE | O_WR);
+ // 
+	// write(fd, "ja volim aor2", 13);
+ // 
+	// close(fd);
 
 	for (;;)
 		asm volatile("hlt");

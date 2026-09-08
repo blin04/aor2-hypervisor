@@ -58,6 +58,7 @@ void* handler(void *arg)
 		}
 
 		switch (v->run->exit_reason) {
+
 		case KVM_EXIT_IO:
 			if (v->run->io.direction == KVM_EXIT_IO_OUT && v->run->io.port == IO_PORT) {
 				char *p = (char *)v->run;
@@ -84,7 +85,8 @@ void* handler(void *arg)
 				if (v->run->io.direction == KVM_EXIT_IO_IN) {
 					uint32_t *loc = (uint32_t *)(p + v->run->io.data_offset);
 					*loc = ipc_handler(v, &ipc_op, 0);
-				} else {
+				} 
+				else {
 					uint32_t data = (v->run->io.size == 4)
 						? *(uint32_t *)(p + v->run->io.data_offset)
 						: *(unsigned char *)(p + v->run->io.data_offset);
@@ -92,6 +94,7 @@ void* handler(void *arg)
 				}
 			}
 			continue;
+
 		case KVM_EXIT_IRQ_WINDOW_OPEN:
 			if (!ipc_is_finished()) {
 				if (inject_irq(v, IRQ_NUM) < 0) {
@@ -99,18 +102,21 @@ void* handler(void *arg)
 					vm_destroy(v);
 					return NULL;
 				}
-			} else {
+			} 
+			else 
 				v->run->request_interrupt_window = 0;
-			}
 			continue;
+
 		case KVM_EXIT_HLT:
 			vm_log(v, "VM %d (image: %s) finished!\n", v->id, v->image_path);
 			v->stop = 1;
 			break;
+
 		case KVM_EXIT_SHUTDOWN:
 			vm_log(v, "Shutdown\n");
 			v->stop = 1;
 			break;
+
 		case KVM_EXIT_FAIL_ENTRY:
 			vm_log(v, "VM stopped: guest %s failed to enter guest mode, "
 			       "hardware entry failure reason 0x%llx\n",
@@ -118,15 +124,18 @@ void* handler(void *arg)
 			       (unsigned long long)v->run->fail_entry.hardware_entry_failure_reason);
 			v->stop = 1;
 			break;
+
 		case KVM_EXIT_INTERNAL_ERROR:
 			vm_log(v, "VM stopped: guest %s internal KVM error, suberror %u\n",
 			       v->image_path, v->run->internal.suberror);
 			v->stop = 1;
 			break;
+
 		default:
 			vm_log(v, "Default - guest %s exit reason: %d\n",
 			       v->image_path, v->run->exit_reason);
 			break;
+
 		}
 	}
 	return NULL;
