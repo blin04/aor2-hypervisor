@@ -15,16 +15,16 @@ static enum guest_role role = ROLE_NONE;
 static void __attribute__((interrupt, target("general-regs-only")))
 irq0_handler(struct interrupt_frame *frame)
 {
-	//if (role == ROLE_NONE) {
-	//	role = inb(IPC_ROLE_PORT);
-	//	role_init(IPC_FILE_PATH, role);
-	//}
-	//else {
-	//	if (role == ROLE_READ)
-	//		reader_step();
-	//	else 
-	//		writer_step();
-	//}
+	if (role == ROLE_NONE) {
+		role = inb(IPC_ROLE_PORT);
+		role_init(IPC_FILE_PATH, role);
+	}
+	else {
+		if (role == ROLE_READ)
+			reader_step();
+		else 
+			writer_step();
+	}
 
 }
 

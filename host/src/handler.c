@@ -42,6 +42,7 @@ static void vm_log(struct vm *v, const char *fmt, ...)
 
 void* handler(void *arg)
 {
+	int irq_counter = 10;
 	struct vm *v = (struct vm*)arg;
 
 	struct file_operation file_op;
@@ -91,12 +92,14 @@ void* handler(void *arg)
 			}
 			continue;
 		case KVM_EXIT_IRQ_WINDOW_OPEN:
-			if (!ipc_is_finished()) {
+			// if (!ipc_is_finished()) {
+			if (irq_counter > 0) {
 				if (inject_irq(v, IRQ_NUM) < 0) {
 					flush_console(v);
 					vm_destroy(v);
 					return NULL;
 				}
+				irq_counter--;
 			} else {
 				v->run->request_interrupt_window = 0;
 			}
