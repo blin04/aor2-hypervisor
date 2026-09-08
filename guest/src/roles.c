@@ -44,7 +44,7 @@ void reader_step()
         return;
 
     char buf[IPC_CHUNK_SIZE];
-    uint32_t n = ipc_read(buf, IPC_CHUNK_SIZE);
+    uint32_t n = ipc_read(buf);
     if (n == 0) {
         close(fd);
         done = 1;

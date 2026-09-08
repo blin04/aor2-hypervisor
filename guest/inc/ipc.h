@@ -11,8 +11,10 @@
 #define IPC_OUT_PATH	"out.txt"
 
 
+// writes up to CHUNK_SIZE bytes from buf
 uint32_t ipc_write(const char *buf, uint32_t count);
 
-uint32_t ipc_read(char *buf, uint32_t cap);
+// writes up to CHUNK_SIZE bytes to buf
+uint32_t ipc_read(char *buf);
 
 #endif
