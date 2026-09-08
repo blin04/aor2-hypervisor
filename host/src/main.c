@@ -1,3 +1,4 @@
+#include "buffer.h"
 #include "vm.h"
 #include "handler.h"
 #include "fileops.h"
@@ -103,6 +104,7 @@ int main(int argc, char *argv[])
 	pthread_t guest_handlers[n_guests];
 
 	init_shared_files(shared_files, n_shared_files);
+	buffer_init(n_guests - 1);	
 
 	for (int i = 0; i < n_guests; i++) {
 		setup_vm(&guests[i], i, guest_paths[i], guest_memory_size, guest_page_size);
