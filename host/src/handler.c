@@ -68,6 +68,12 @@ void* handler(void *arg)
 				if (c == '\n' || v->out_len == sizeof(v->out_buf))
 					flush_console(v);
 			}
+			else if (v->run->io.direction == KVM_EXIT_IO_IN && v->run->io.port == IO_PORT) {
+				int x;
+				scanf("%d", &x);
+				uint32_t* loc = (uint32_t*)((char*)v->run + v->run->io.data_offset);
+				*loc = (uint32_t)x;
+			}
 			else if (v->run->io.direction == KVM_EXIT_IO_OUT && v->run->io.port == FILE_PORT) {
 				char* p = (char *)v->run;
 				uint32_t data = (v->run->io.size == 4)

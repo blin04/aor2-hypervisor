@@ -51,17 +51,18 @@ _start(void)
 
 	init_idt();
 
-	asm volatile("sti");
- 
-	asm volatile("nop");
- 
-	asm volatile("nop");
+	//asm volatile("sti");
+ //
+	//asm volatile("nop");
+ //
+	//asm volatile("nop");
 
-	// int fd = open("test.txt", O_CREATE | O_WR);
- // 
-	// write(fd, "ja volim aor2", 13);
- // 
-	// close(fd);
+	int x = inb(OUT_PORT);
+	int y = inb(OUT_PORT);
+
+	print_int(x);
+	print("\n");
+	print_int(y);
 
 	for (;;)
 		asm volatile("hlt");
