@@ -27,6 +27,10 @@
 
 #define FILE_PORT	0x0278
 #define IO_PORT		0xE9
+#define IPC_SHARED_PORT	0x510
+
+#define GUEST_ROLE_READ		0
+#define GUEST_ROLE_WRITE	1
 
 struct vm {
 	int id;
@@ -43,6 +47,8 @@ struct vm {
 	int stop;
 	int ret;
 	int irqs_count;
+	int guest_role;
+	int guest_role_set; 
 	char out_buf[256];
 	size_t out_len;
 

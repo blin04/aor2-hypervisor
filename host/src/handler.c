@@ -76,6 +76,18 @@ void* handler(void *arg)
 				uint32_t* loc = (uint32_t*)(p + v->run->io.data_offset);
 				*loc = file_operation_handler(v, &file_op, 0);
 			}
+			else if (v->run->io.direction == KVM_EXIT_IO_IN && v->run->io.port == IPC_SHARED_PORT) {
+				char *p = (char *)v->run;
+				uint32_t *loc = (uint32_t *)(p + v->run->io.data_offset);
+				if (!v->guest_role_set) {
+					// first interrupt handling, give the guest his role
+					*loc = (uint32_t)v->guest_role;
+					v->guest_role_set = 1;
+				} else {
+					// todo: implement guest's role
+					*loc = 0;
+				}
+			}
 			continue;
 		case KVM_EXIT_IRQ_WINDOW_OPEN:
 			if (v->irqs_count > 0) {

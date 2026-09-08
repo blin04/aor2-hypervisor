@@ -4,6 +4,14 @@
 
 static struct idt_entry idt[IDT_ENTRIES];
 
+enum guest_role {
+	ROLE_NONE = -1,
+	ROLE_READ,
+	ROLE_WRITE
+};
+
+static enum guest_role role = ROLE_NONE;
+
 /*
 	"general-regs-only" sprečava GCC da emituje SSE instrukcije, koje su zabranjene unutar
 	__attribute__((interrupt)) handlera
@@ -11,10 +19,15 @@ static struct idt_entry idt[IDT_ENTRIES];
 static void __attribute__((interrupt, target("general-regs-only")))
 irq0_handler(struct interrupt_frame *frame)
 {
-	const char *s;
+	if (role == ROLE_NONE)
+		role = inb(ROLE_PORT);
 
-	for (s = "IRQ0 received!\n"; *s; ++s)
-		outb(0xE9, *s);
+	const char* s;
+	print("Guest is ");
+	if (role == ROLE_READ)
+		print("reader\n");
+	else 
+		print("writer\n");
 }
 
 static void set_idt_gate(unsigned n, void (*handler)(struct interrupt_frame *))

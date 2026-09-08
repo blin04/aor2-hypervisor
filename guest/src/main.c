@@ -63,7 +63,7 @@ _start(void)
 
 	// lseek_test();
 
-	copy_on_write_test();
+	// copy_on_write_test();
 
 	for (;;)
 		asm volatile("hlt");

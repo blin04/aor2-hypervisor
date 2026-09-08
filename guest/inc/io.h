@@ -5,6 +5,7 @@
 
 #define FILE_PORT   0x278
 #define OUT_PORT    0xE9
+#define ROLE_PORT	0x510
 
 void print(const char* s);
 
@@ -48,4 +49,4 @@ static inline void in_bytes(uint16_t port, void *buf, uint32_t count)
 		p[i] = inb(port);
 }
 
-#endif /* IO_H */
+#endif
