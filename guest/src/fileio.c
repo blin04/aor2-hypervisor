@@ -48,7 +48,6 @@ int read(int fd, char *buf, int count)
 
 int write(int fd, const char *buf, int count)
 {
-	outb(OUT_PORT, 69);
 	outb(FILE_PORT, FN_WRITE);
 	out_u32(FILE_PORT, (uint32_t)fd);
 	out_u32(FILE_PORT, (uint32_t)count);

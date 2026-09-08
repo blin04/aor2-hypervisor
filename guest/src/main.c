@@ -53,18 +53,9 @@ _start(void)
 
 	asm volatile("sti");
 
-	print("Hello, world!\n");
+	asm volatile("nop");
 
-	// fileio_test();
-
-	// write_test();
-
-	// read_test();
-
-	// lseek_test();
-
-	// copy_on_write_test();
-
+	asm volatile("nop");
 
 	for (;;)
 		asm volatile("hlt");
