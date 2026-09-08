@@ -1,14 +1,10 @@
 #include "descriptors.h"
+#include "fileio.h"
 #include "interrupts.h"
 #include "io.h"
+#include "roles.h"
 
 static struct idt_entry idt[IDT_ENTRIES];
-
-enum guest_role {
-	ROLE_NONE = -1,
-	ROLE_READ,
-	ROLE_WRITE
-};
 
 static enum guest_role role = ROLE_NONE;
 
@@ -19,15 +15,17 @@ static enum guest_role role = ROLE_NONE;
 static void __attribute__((interrupt, target("general-regs-only")))
 irq0_handler(struct interrupt_frame *frame)
 {
-	if (role == ROLE_NONE)
-		role = inb(ROLE_PORT);
+	if (role == ROLE_NONE) {
+		role = inb(IPC_ROLE_PORT);
+		role_init(IPC_FILE_PATH, role);
+	}
+	else {
+		if (role == ROLE_READ)
+			reader_step();
+		else 
+			writer_step();
+	}
 
-	const char* s;
-	print("Guest is ");
-	if (role == ROLE_READ)
-		print("reader\n");
-	else 
-		print("writer\n");
 }
 
 static void set_idt_gate(unsigned n, void (*handler)(struct interrupt_frame *))

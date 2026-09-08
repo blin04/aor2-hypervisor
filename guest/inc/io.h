@@ -3,9 +3,13 @@
 
 #include <stdint.h>
 
-#define FILE_PORT   0x278
-#define OUT_PORT    0xE9
-#define ROLE_PORT	0x510
+#define FILE_PORT   	0x278
+#define OUT_PORT    	0xE9
+#define IPC_ROLE_PORT	0x510
+#define IPC_DATA_PORT	0x520
+#define IPC_CHUNK		64		// bytes sent per round
+
+#define IPC_FILE_PATH	"ipc.txt"
 
 void print(const char* s);
 
