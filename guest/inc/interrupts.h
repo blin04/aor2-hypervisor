@@ -3,4 +3,4 @@
 
 void init_idt(void);
 
-#endif /* INTERRUPTS_H */
+#endif

@@ -37,4 +37,4 @@ struct gdt_entry {
 	uint8_t  base_high;
 } __attribute__((packed));
 
-#endif /* DESCRIPTORS_H */
+#endif

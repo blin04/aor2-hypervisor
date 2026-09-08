@@ -7,4 +7,4 @@ void read_test(void);
 void lseek_test(void);
 void copy_on_write_test(void);
 
-#endif /* TEST_H */
+#endif

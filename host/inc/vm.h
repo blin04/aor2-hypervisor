@@ -62,4 +62,4 @@ void setup_long_mode(struct vm *v, struct kvm_sregs *sregs, size_t page_size);
 int  load_guest_image(struct vm *v, const char *image_path, uint64_t load_addr);
 int  inject_irq(struct vm *v, unsigned int vector);
 
-#endif /* VM_H */
+#endif

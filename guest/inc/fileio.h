@@ -17,4 +17,4 @@ int lseek(int fd, const int offset, int off_flag);
 
 int strlen(const char *s);
 
-#endif /* FILEIO_H */
+#endif
