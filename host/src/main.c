@@ -17,12 +17,15 @@ int main(int argc, char *argv[])
 		{"memory", required_argument, NULL, 'm'},
 		{"page", required_argument, NULL, 'p'},
 		{"guest", required_argument, NULL, 'g'},
+		{"fileq", required_argument, NULL, 'f'},
 		{0, 0, 0, 0}
 	};
 
 	int ret;
 	int n_guests = 0;
 	char** guest_paths = (char** )malloc(sizeof(char *));
+	int n_shared_files = 0;
+	char** shared_files = NULL;
 
 	if (guest_paths == NULL) {
 		printf("error: malloc failed\n");
@@ -33,38 +36,50 @@ int main(int argc, char *argv[])
 	unsigned int guest_page_size;
 
 	// parse arguments
-	while ((ret = getopt_long(argc, argv, "m:p:g:", options, NULL)) != -1) {
+	while ((ret = getopt_long(argc, argv, "m:p:g:f::", options, NULL)) != -1) {
 		switch (ret) {
 		case 'm':
-			// printf("parsed m with arg %s\n", optarg);
 			guest_memory_size = atoi(optarg) * 1024u * 1024u;		// MB
 			break;
 		case 'p':
-			// printf("parsed p with arg %s\n", optarg);
 			if (*optarg == '2')
 				guest_page_size = 2 * 1024u * 1024u;	// 2MB
 			else
 				guest_page_size = 4 * 1024u;			// 4kB
 			break;
 		case 'g':
-			// printf("parsed g with args: ");
-		
 			// first guest image is parsed by getopt
-			guest_paths[0] = optarg;
-			n_guests++;
+			guest_paths[n_guests++] = optarg;
 
 			// parse the rest of guest images
 			while (optind < argc && argv[optind][0] != '-') {
 				guest_paths = realloc(guest_paths, (n_guests + 1) * sizeof(char *));
+				if (guest_paths == NULL) {
+					printf("error: realloc failed\n");
+					return 1;
+				}
 				guest_paths[n_guests++] = argv[optind];
 				optind++;
 			}
 
-			for (int i = 0; i < n_guests; i++) {
-				if (i != 0) printf(", ");
-				printf("%s", guest_paths[i]);
-			}				
-			printf("\n");
+			break;
+		case 'f':
+			shared_files = (char**) malloc(sizeof(char*));
+			if (shared_files == NULL) {
+				printf("error: malloc failed\n");
+				return 1;
+			}
+
+			shared_files[n_shared_files++] = optarg;
+			while (optind < argc && argv[optind][0] != '-') {
+				shared_files = realloc(shared_files, (n_shared_files + 1) * sizeof(char *));
+				if (shared_files == NULL) {
+					printf("error: realloc failed\n");
+					return 1;
+				}
+				shared_files[n_shared_files++] = argv[optind];
+				optind++;
+			}
 
 			break;
 		case '?':
