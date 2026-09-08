@@ -1,3 +1,4 @@
 guest/build
 host/build
 *.txt
+.vscode/

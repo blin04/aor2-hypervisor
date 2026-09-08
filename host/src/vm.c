@@ -56,7 +56,6 @@ int setup_vm(struct vm *v, int id, const char* image_path, int memory_size, int 
 
 	// only the first vm is a writer, all the other are readers
 	v->guest_role = (id == 0) ? GUEST_ROLE_WRITE : GUEST_ROLE_READ;
-	v->guest_role_set = 0;
 
 	return 1;
 }

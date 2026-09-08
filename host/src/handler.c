@@ -42,11 +42,12 @@ static void vm_log(struct vm *v, const char *fmt, ...)
 
 void* handler(void *arg)
 {
-	int irq_counter = 10;
 	struct vm *v = (struct vm*)arg;
 
 	struct file_operation file_op;
 	file_op.code = -1;
+	struct ipc_operation ipc_op;
+	ipc_op.state = IPC_SEND_ROLE;
 
 	while (v->stop == 0) {
 		v->ret = ioctl(v->vcpu_fd, KVM_RUN, 0);
@@ -78,28 +79,26 @@ void* handler(void *arg)
 				uint32_t* loc = (uint32_t*)(p + v->run->io.data_offset);
 				*loc = file_operation_handler(v, &file_op, 0);
 			}
-			else if (v->run->io.direction == KVM_EXIT_IO_IN && v->run->io.port == IPC_SHARED_PORT) {
+			else if (v->run->io.port == IPC_DATA_PORT || v->run->io.port == IPC_RESPONSE_PORT) {
 				char *p = (char *)v->run;
-				uint32_t *loc = (uint32_t *)(p + v->run->io.data_offset);
-				if (!v->guest_role_set) {
-					// first interrupt handling, give the guest his role
-					*loc = (uint32_t)v->guest_role;
-					v->guest_role_set = 1;
+				if (v->run->io.direction == KVM_EXIT_IO_IN) {
+					uint32_t *loc = (uint32_t *)(p + v->run->io.data_offset);
+					*loc = ipc_handler(v, &ipc_op, 0);
 				} else {
-					// todo: implement guest's role
-					*loc = 0;
+					uint32_t data = (v->run->io.size == 4)
+						? *(uint32_t *)(p + v->run->io.data_offset)
+						: *(unsigned char *)(p + v->run->io.data_offset);
+					ipc_handler(v, &ipc_op, data);
 				}
 			}
 			continue;
 		case KVM_EXIT_IRQ_WINDOW_OPEN:
-			// if (!ipc_is_finished()) {
-			if (irq_counter > 0) {
+			if (!ipc_is_finished()) {
 				if (inject_irq(v, IRQ_NUM) < 0) {
 					flush_console(v);
 					vm_destroy(v);
 					return NULL;
 				}
-				irq_counter--;
 			} else {
 				v->run->request_interrupt_window = 0;
 			}

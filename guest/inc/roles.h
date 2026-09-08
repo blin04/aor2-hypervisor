@@ -7,7 +7,7 @@ enum guest_role {
 	ROLE_WRITE
 };
 
-void role_init(const char* path, enum guest_role role);
+void role_init(enum guest_role role);
 
 void reader_step();
 

@@ -53,7 +53,7 @@ _start(void)
 
 	asm volatile("sti");
 
-	print("Hello, world!\n");
+	// print("Hello, world!\n");
 
 	// fileio_test();
 

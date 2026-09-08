@@ -70,8 +70,6 @@ static int host_open(struct vm *v, const char *path, uint8_t flags) {
         }
     }
     else free_fd = fd;
-
-    printf("[dbg] host_open path=%s host_path=%s flags=%u -> guest_fd=%d host_fd=%d\n", path, host_path, flags, free_fd, fd);
     return free_fd;
 }
 
@@ -88,7 +86,6 @@ static int host_read(struct vm *v, int fd, char *buf, uint32_t count) {
     if (fd < 0 || fd >= FOP_MAX_FILES)
         return -1;
     int host_fd = v->files[fd].host_fd;
-    printf("[debug] reading from fd=%d\n", host_fd);
     int ret = read(host_fd, buf, count);
     return ret;
 }
@@ -115,20 +112,16 @@ static int host_write(struct vm *v, int fd, const char *buf, uint32_t count) {
     }
     int host_fd = v->files[fd].host_fd;
     int ret = write(host_fd, buf, count);
-    printf("[DEBUG] Trying writing %s, actually written %d, error? %d\n", buf, ret, errno);
     return ret;
 }
 
 static int host_lseek(struct vm *v, int fd, int offset, uint8_t off_flag) {
     if (fd < 0 || fd >= FOP_MAX_FILES)
         return -1;
-    int host_fd = v->files[fd].host_fd;
 
-    // translate wire seek flag into POSIX whence; offset is ignored for SEEK_END
+    int host_fd = v->files[fd].host_fd;
     int whence = (off_flag == FOP_SEEK_END) ? SEEK_END : SEEK_SET;
     int ret = lseek(host_fd, (off_flag == FOP_SEEK_END) ? 0 : offset, whence);
-    printf("[dbg] host_lseek guest_fd=%d host_fd=%d offset=%d off_flag=%u -> %d\n",
-           fd, host_fd, offset, off_flag, ret);
     return ret;
 }
 

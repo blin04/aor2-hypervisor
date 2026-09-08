@@ -2,6 +2,7 @@
 #include "fileio.h"
 #include "interrupts.h"
 #include "io.h"
+#include "ipc.h"
 #include "roles.h"
 
 static struct idt_entry idt[IDT_ENTRIES];
@@ -16,8 +17,8 @@ static void __attribute__((interrupt, target("general-regs-only")))
 irq0_handler(struct interrupt_frame *frame)
 {
 	if (role == ROLE_NONE) {
-		role = inb(IPC_ROLE_PORT);
-		role_init(IPC_FILE_PATH, role);
+		role = inb(IPC_DATA_PORT);
+		role_init(role);
 	}
 	else {
 		if (role == ROLE_READ)
