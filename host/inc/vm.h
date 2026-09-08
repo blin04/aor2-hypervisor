@@ -12,7 +12,6 @@
 #define GUEST_CODE_PAGES 16
 
 #define IRQ_NUM   32
-#define IRQ_COUNT 3
 
 #define PDE64_PRESENT (1u << 0)
 #define PDE64_RW      (1u << 1)
@@ -46,7 +45,6 @@ struct vm {
 	struct kvm_regs regs;
 	int stop;
 	int ret;
-	int irqs_count;
 	int guest_role;
 	int guest_role_set; 
 	char out_buf[256];

@@ -1,6 +1,7 @@
 #include "vm.h"
 #include "handler.h"
 #include "fileops.h"
+#include "ipc.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -90,13 +91,12 @@ void* handler(void *arg)
 			}
 			continue;
 		case KVM_EXIT_IRQ_WINDOW_OPEN:
-			if (v->irqs_count > 0) {
+			if (!ipc_is_finished()) {
 				if (inject_irq(v, IRQ_NUM) < 0) {
 					flush_console(v);
 					vm_destroy(v);
 					return NULL;
 				}
-				v->irqs_count--;
 			} else {
 				v->run->request_interrupt_window = 0;
 			}
