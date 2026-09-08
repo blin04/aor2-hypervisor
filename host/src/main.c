@@ -41,13 +41,22 @@ int main(int argc, char *argv[])
 	while ((ret = getopt_long(argc, argv, "m:p:g:f::", options, NULL)) != -1) {
 		switch (ret) {
 		case 'm':
-			guest_memory_size = atoi(optarg) * 1024u * 1024u;		// MB
+			if (*optarg == '2' || *optarg == '4' || *optarg == '8')
+				guest_memory_size = atoi(optarg) * 1024u * 1024u;		// MB
+			else {
+				printf("error: invalid memory size\n");
+				return 1;
+			}
 			break;
 		case 'p':
 			if (*optarg == '2')
 				guest_page_size = 2 * 1024u * 1024u;	// 2MB
-			else
+			else if (*optarg == '4')
 				guest_page_size = 4 * 1024u;			// 4kB
+			else {
+				printf("error: invalid page size\n");
+				return 1;
+			}
 			break;
 		case 'g':
 			// first guest image is parsed by getopt
